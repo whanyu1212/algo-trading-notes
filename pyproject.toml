@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "algo-trading-notes"
+version = "0.1.0"
+description = ""
+authors = ["hy"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.0"
+scipy = "^1.12.0"
+numpy = "^1.26.3"
+scikit-learn = "^1.4.0"
+yfinance = "^0.2.36"
+ipykernel = "^6.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
