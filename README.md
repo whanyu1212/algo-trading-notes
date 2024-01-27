@@ -1,2 +1,2 @@
 # algo-trading-notes
-Keep notes for algo trading related content
+This is a repository where I keep algo trading related implementation done in either Python or Julia
