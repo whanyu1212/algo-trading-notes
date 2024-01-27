@@ -13,6 +13,13 @@ numpy = "^1.26.3"
 scikit-learn = "^1.4.0"
 yfinance = "^0.2.36"
 ipykernel = "^6.29.0"
+python-dotenv = "^1.0.1"
+quandl = "^3.7.0"
+eikon = "^1.1.18"
+seaborn = "^0.13.1"
+mplfinance = "^0.12.10b0"
+plotly = "^5.18.0"
+nbformat = "^5.9.2"
 
 
 [build-system]
