@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import warnings
+import time
 
 warnings.filterwarnings("ignore")
 from scipy.optimize import brute
@@ -104,4 +105,7 @@ if __name__ == "__main__":
     print(smabt.backtest_strategy())
     smabt.update_SMA_parameters(SMA1=20, SMA2=100)
     print(smabt.backtest_strategy())
-    print(smabt.optimize_parameters((30, 56, 4), (200, 300, 4)))
+    start_time = time.time()
+    print(smabt.optimize_parameters((42, 56, 1), (252, 300, 1)))
+    end_time = time.time()
+    print(f"Time taken to optimize: {end_time - start_time} seconds")
