@@ -20,12 +20,9 @@ seaborn = "^0.13.1"
 mplfinance = "^0.12.10b0"
 plotly = "^5.18.0"
 nbformat = "^5.9.2"
-<<<<<<< Updated upstream
 pyarrow = "^15.0.0"
 openpyxl = "^3.1.2"
-=======
 statsmodels = "^0.14.1"
->>>>>>> Stashed changes
 
 
 [build-system]
