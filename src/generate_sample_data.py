@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
+from memory_profiler import profile
 
 r = 0.05  # constant short rate
 sigma = 0.5  # volatility factor
 
 
+@profile
 def generate_sample_data(rows, cols, freq="1min"):
     """
     Function to generate sample financial data.
