@@ -49,6 +49,9 @@ class BASS:
         except ValueError:
             raise ValueError("start_date and end_date must be valid date strings")
 
+        if pd.to_datetime(start_date) >= pd.to_datetime(end_date):
+            raise ValueError("start_date must be before end_date")
+
         # Check that benchmark_ticker is a string
         if not isinstance(benchmark_ticker, str):
             raise ValueError("benchmark_ticker must be a string")
@@ -60,6 +63,8 @@ class BASS:
         # Check that risk_free_rate is a float
         if not isinstance(risk_free_rate, float):
             raise ValueError("risk_free_rate must be a float")
+        if risk_free_rate < 0 or risk_free_rate > 1:
+            raise ValueError("risk_free_rate must be within the range [0, 1]")
 
         self.tickers = tickers
         self.benchmark_ticker = benchmark_ticker
