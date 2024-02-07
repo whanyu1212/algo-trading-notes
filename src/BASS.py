@@ -29,10 +29,11 @@ class BASS:
         self.interval = interval
         self.rf_rate = rf_rate
         logger.info(
-            f"Initiliazing BASS calculation for {self.tickers} from {self.start_date} to {self.end_date}"
+            f"Initiliazing BASS calculation for {self.tickers} "
+            f"from {self.start_date} to {self.end_date}"
         )
         self.data = self.get_data()
-        self.returns = self.calculate_returns()
+        self.returns = self.calculate_daily_returns()
 
     def get_data(self):
         try:
@@ -65,17 +66,30 @@ class BASS:
             logger.error("An error occurred during data download: %s", str(e))
             raise
 
-    def calculate_returns(self):
+    def calculate_daily_returns(self):
         if self.data is None or self.data.empty:
             logger.error("No data available for calculating returns")
             return None
 
         try:
-            logger.info("Calculating returns for tickers: {}", self.tickers)
+            logger.info("Calculating daily returns for tickers: {}", self.tickers)
             return_data = self.data.pct_change().dropna()
             return return_data
         except Exception as e:
             logger.error("An error occurred during return calculation: %s", str(e))
+            raise
+
+    def calculate_annualized_return(self, returns):
+        """
+        This method calculates the annualized return given a series of returns
+        """
+        try:
+            logger.info("Calculating annualized return")
+            return np.prod(1 + returns) ** (252 / len(returns)) - 1
+        except Exception as e:
+            logger.error(
+                "An error occurred during annualized return calculation: %s", e
+            )
             raise
 
     def calculate_beta(self, ticker: str):
@@ -98,14 +112,9 @@ class BASS:
         logger.info("Calculating alpha for ticker: {}", ticker)
         try:
             beta = self.calculate_beta(ticker)
-            annualized_return = (
-                np.prod(1 + self.returns[ticker]) ** (252 / len(self.returns[ticker]))
-                - 1
-            )
-            annualized_benchmark_return = (
-                np.prod(1 + self.returns[self.benchmark_ticker])
-                ** (252 / len(self.returns[self.benchmark_ticker]))
-                - 1
+            annualized_return = self.calculate_annualized_return(self.returns[ticker])
+            annualized_benchmark_return = self.calculate_annualized_return(
+                self.returns[self.benchmark_ticker]
             )
             alpha = annualized_return - (
                 self.rf_rate + beta * (annualized_benchmark_return - self.rf_rate)
@@ -121,12 +130,9 @@ class BASS:
     def calculate_sharpe(self, ticker: str):
         logger.info("Calculating sharpe ratio for ticker: {}", ticker)
         try:
-            individual_ticker_return = (
-                np.prod(1 + self.returns[ticker]) ** (252 / len(self.returns[ticker]))
-                - 1
-            )
+            annualized_return = self.calculate_annualized_return(self.returns[ticker])
             individual_tick_std = self.returns[ticker].std() * np.sqrt(252)
-            return (individual_ticker_return - self.rf_rate) / individual_tick_std
+            return (annualized_return - self.rf_rate) / individual_tick_std
         except ZeroDivisionError:
             return None
 
@@ -134,10 +140,8 @@ class BASS:
         metrics = pd.DataFrame(index=self.tickers)
         for ticker in self.tickers:
             try:
-                metrics.loc[ticker, "Return"] = (
-                    np.prod(1 + self.returns[ticker])
-                    ** (252 / len(self.returns[ticker]))
-                    - 1
+                metrics.loc[ticker, "Return"] = self.calculate_annualized_return(
+                    self.returns[ticker]
                 )
                 metrics.loc[ticker, "Standard Deviation"] = self.returns[
                     ticker
@@ -148,8 +152,11 @@ class BASS:
                 metrics.loc[ticker, "Beta"] = self.calculate_beta(ticker)
                 metrics.loc[ticker, "Alpha"] = self.calculate_alpha(ticker)
                 metrics.loc[ticker, "Sharpe Ratio"] = self.calculate_sharpe(ticker)
-            except ValueError as e:
-                print(f"Value error for {ticker} - {e}")
+            except ZeroDivisionError as e:
+                logger.error(f"ZeroDivisionError for {ticker} - {e}")
+                continue
+            except Exception as e:
+                logger.error(f"Unexpected error for {ticker} - {e}")
                 continue
         return metrics
 
