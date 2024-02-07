@@ -1,3 +1,4 @@
+import time
 import yfinance as yf
 import pandas as pd
 import warnings
@@ -20,14 +21,24 @@ class BASS:
         end_date: str,
         benchmark_ticker: str = "^STI",
         interval: str = "1d",
-        rf_rate: float = 0.0,
+        risk_free_rate: float = 0.0,
     ):
+        """Initializes the BASS class
+
+        Args:
+            tickers (List[str]): A list of tickers to calculate BASS for
+            start_date (str): left bound of the date range (inclusive)
+            end_date (str): right bound of the date range (exclusive)
+            benchmark_ticker (str, optional): Benchmark ticker that is used to represent the market. Defaults to "^STI".
+            interval (str, optional): Interval of the pricing data. Defaults to "1d".
+            risk_free_rate (float, optional): risk free rate for this calculation. Defaults to 0.0.
+        """
         self.tickers = tickers
         self.benchmark_ticker = benchmark_ticker
         self.start_date = start_date
         self.end_date = end_date
         self.interval = interval
-        self.rf_rate = rf_rate
+        self.risk_free_rate = risk_free_rate
         logger.info(
             f"Initiliazing BASS calculation for {self.tickers} "
             f"from {self.start_date} to {self.end_date}"
@@ -35,36 +46,42 @@ class BASS:
         self.data = self.get_data()
         self.returns = self.calculate_daily_returns()
 
-    def get_data(self):
-        try:
-            logger.info(
-                "Downloading data for tickers: {}",
-                self.tickers + [self.benchmark_ticker],
-            )
-            data = yf.download(
-                self.tickers + [self.benchmark_ticker],
-                start=self.start_date,
-                end=self.end_date,
-                interval=self.interval,
-            )["Close"]
-            data = data.dropna(
-                axis=1, how="all"
-            )  # one of the tickers have been delisted
+    def get_data(self, retries=3, delay=5):
+        for i in range(retries):
+            try:
+                logger.info(
+                    "Downloading data for tickers: {}",
+                    self.tickers + [self.benchmark_ticker],
+                )
+                data = yf.download(
+                    self.tickers + [self.benchmark_ticker],
+                    start=self.start_date,
+                    end=self.end_date,
+                    interval=self.interval,
+                )["Close"]
+                # one of the tickers have been delisted
+                # drop the column
+                data = data.dropna(axis=1, how="all")
 
-            # update ticker list
-            self.tickers = [
-                ticker
-                for ticker in data.columns.tolist()
-                if ticker != self.benchmark_ticker
-            ]
-            if not data.empty:
-                logger.info("Data downloaded successfully")
-            else:
-                logger.error("Data download failed")
-            return data
-        except Exception as e:
-            logger.error("An error occurred during data download: %s", str(e))
-            raise
+                # update ticker list
+                # skip the dropped ticker
+                self.tickers = [
+                    ticker
+                    for ticker in data.columns.tolist()
+                    if ticker != self.benchmark_ticker
+                ]
+                if not data.empty:
+                    logger.info("Data downloaded successfully")
+                else:
+                    logger.error("Data download failed.")
+                return data
+            except Exception as e:
+                logger.error("An error occurred during data download: %s", str(e))
+                if i < retries - 1:  # i is zero indexed
+                    time.sleep(delay)  # wait before trying again
+                    continue
+                else:
+                    raise  # re-raise the last exception if all retries fail
 
     def calculate_daily_returns(self):
         if self.data is None or self.data.empty:
@@ -79,12 +96,12 @@ class BASS:
             logger.error("An error occurred during return calculation: %s", str(e))
             raise
 
-    def calculate_annualized_return(self, returns):
+    def calculate_annualized_return(self, returns: pd.Series, ticker: str):
         """
         This method calculates the annualized return given a series of returns
         """
         try:
-            logger.info("Calculating annualized return")
+            logger.info("Calculating annualized return for %s", ticker)
             return np.prod(1 + returns) ** (252 / len(returns)) - 1
         except Exception as e:
             logger.error(
@@ -117,7 +134,8 @@ class BASS:
                 self.returns[self.benchmark_ticker]
             )
             alpha = annualized_return - (
-                self.rf_rate + beta * (annualized_benchmark_return - self.rf_rate)
+                self.risk_free_rate
+                + beta * (annualized_benchmark_return - self.risk_free_rate)
             )
             return alpha
         except ZeroDivisionError:
@@ -132,7 +150,7 @@ class BASS:
         try:
             annualized_return = self.calculate_annualized_return(self.returns[ticker])
             individual_tick_std = self.returns[ticker].std() * np.sqrt(252)
-            return (annualized_return - self.rf_rate) / individual_tick_std
+            return (annualized_return - self.risk_free_rate) / individual_tick_std
         except ZeroDivisionError:
             return None
 
