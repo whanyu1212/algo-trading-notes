@@ -191,7 +191,7 @@ class MomemtumVectorTester:
 
         if self.results is None:
             print("No results to plot yet. Run a strategy.")
-        title = "%s | TC = %.4f" % (self.symbol, self.tc)
+        title = "%s | TC = %.4f" % (self.symbol, self.transaction_cost)
         self.results[["cumulative_returns", "cumulative_strategy"]].plot(
             title=title, figsize=(10, 6)
         )
