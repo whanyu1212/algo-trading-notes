@@ -5,6 +5,42 @@ from typing import Union, List, Tuple
 
 
 class TechnicalAnalysisIndicators:
+    """
+    A class used to calculate various technical analysis indicators for a given stock.
+
+    ...
+
+    Attributes
+    ----------
+    symbol : str
+        The ticker symbol of the stock
+    start : str
+        The start date for the data
+    end : str
+        The end date for the data
+    interval : str
+        The frequency of the data (default is "1d")
+    window : int
+        The window period for the calculation of indicators (default is 14)
+    data : pd.DataFrame
+        The historical data for the stock
+
+    Methods
+    -------
+    get_data():
+        Fetches the historical data for the ticker symbol from Yahoo Finance.
+    calculate_price_change():
+        Calculates changes in price from the previous day.
+    calculate_RSI():
+        Calculates the Relative Strength Index (RSI) given the window period.
+    calculate_SMA():
+        Calculates the Simple Moving Average (SMA) given the window period.
+    calculate_ATR():
+        Calculates the Average True Range (ATR) given the window period.
+    calculation_flow():
+        Orchestrates the calculation of the technical analysis indicators.
+    """
+
     def __init__(
         self, symbol: str, start: str, end: str, interval: str = "1d", window: int = 14
     ):
